@@ -1,0 +1,45 @@
+name: Python Pip Commands Across OSes
+
+on:
+  push:
+    branches:
+      - main-
+  pull_request:
+    branches:
+      - main-
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Define the operating systems to run on
+        os: [ubuntu-latest, ubuntu-22.04, windows-2025, windows-latest, macos-15, macos-latest, macos-13]
+        # Define the Python versions to test against
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4 # Action to checkout your code into the runner environment
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5 # Action to set up a specific Python version
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip' # Cache pip dependencies to speed up builds
+
+    - name: Display Python and Pip versions
+      run: |
+        python --version
+        pip --version
+
+    - name: Upgrade pip
+      run: python -m pip install --upgrade pip setuptools wheel
+
+    - name: Install dependencies from requirements.txt
+      # This command will install packages listed in your requirements.txt file.
+      run: pip install -r requirements.txt
+
+    - name: List installed packages
+      # Verify which packages have been installed by pip.
+      run: pip list

@@ -1,0 +1,5 @@
+# An empty map
+name: empty
+tags:
+  - map
+empty_map: {}

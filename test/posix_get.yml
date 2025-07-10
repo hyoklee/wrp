@@ -1,0 +1,9 @@
+# Sample OMNI format in YAML for get
+name: cae posix job
+
+# Output path
+path: "A46_xx.bin"
+
+# bytes
+size: 30
+
