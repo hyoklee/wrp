@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+      - name: setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: 'latest'
       - name: install
         run: |
           vcpkg install poco[crypto,netssl] yaml-cpp
@@ -22,7 +26,10 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r" ..
+          cmake -DCTEST_EXPERIMENTAL_INSTRUMENTATION=ec7aa2dc-b87f-45a3-8022-fe01c5f59984 ^
+            -DCTEST_USE_INSTRUMENTATION=1 ^
+            -DCTEST_USE_VERBOSE_INSTRUMENTATION=1 ^
+            -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r" ..
           ctest -C Release -D Experimental
           cd ..
         shell: cmd
@@ -30,6 +37,9 @@ jobs:
         run: |
           mkdir poco
           cd poco
-          cmake -DPOCO=ON -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r/poco" ..
+          cmake -DPOCO=ON -DCTEST_EXPERIMENTAL_INSTRUMENTATION=ec7aa2dc-b87f-45a3-8022-fe01c5f59984 ^
+            -DCTEST_USE_INSTRUMENTATION=1 ^
+            -DCTEST_USE_VERBOSE_INSTRUMENTATION=1 ^
+            -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r/poco" ..
           ctest -C Release -D Experimental
         shell: cmd

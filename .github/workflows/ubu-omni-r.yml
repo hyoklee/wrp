@@ -13,6 +13,10 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v4
+    - name: setup cmake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: 'latest'
     - name: install
       run: |
         sudo apt-get install -y libpoco-dev libyaml-cpp-dev
@@ -21,12 +25,18 @@ jobs:
       run: |
           mkdir build
           cd build
-          cmake  -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r" ..
+          cmake -DCTEST_EXPERIMENTAL_INSTRUMENTATION=ec7aa2dc-b87f-45a3-8022-fe01c5f59984 \
+            -DCTEST_USE_INSTRUMENTATION=1 \
+            -DCTEST_USE_VERBOSE_INSTRUMENTATION=1 \
+            -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r" ..
           ctest -C Release -D Experimental
           cd ..
     - name: poco
       run: |
           mkdir poco
           cd poco
-          cmake -DPOCO=ON  -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r/poco" ..
+          cmake -DPOCO=ON -DCTEST_EXPERIMENTAL_INSTRUMENTATION=ec7aa2dc-b87f-45a3-8022-fe01c5f59984 \
+            -DCTEST_USE_INSTRUMENTATION=1 \
+            -DCTEST_USE_VERBOSE_INSTRUMENTATION=1 \
+            -DSITE:STRING="${{ matrix.os }}" -DBUILDNAME="omni/r/poco" ..
           ctest -C Release -D Experimental

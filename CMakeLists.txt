@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
 project(OMNI)
 
+cmake_instrumentation(
+  API_VERSION 1
+  DATA_VERSION 1
+)
+
 include(CTest)
 enable_testing()
 
