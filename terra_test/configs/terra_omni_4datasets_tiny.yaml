@@ -1,0 +1,36 @@
+# TERRA Fusion HDF5 - 4 Tiny Datasets (1 per node)
+# Each dataset is 11x11 = 121 elements (~484 bytes)
+#
+# File: TERRA_BF_L1B_O10204_20011118010522_F000_V001.h5
+
+version: "1.0"
+
+transfers:
+  - name: "terra_tiny_test"
+    description: "Load 4 tiny TERRA datasets into CTE (1 per node)"
+
+    # Source: HDF5 file
+    src: "hdf5::/mnt/common/datasets-staging/TERRA_BF_L1B_O10204_20011118010522_F000_V001.h5"
+
+    # Destination: Tag name in CTE
+    dst: "iowarp::terra_benchmark"
+
+    # Format type
+    format: "hdf5"
+
+    depends_on: ""
+    range_off: 0
+    range_size: 0
+
+    # Dataset filtering: 4 tiny datasets (11x11 each, ~484 bytes)
+    # One dataset per node for 4-node test
+    dataset_filter:
+      include_patterns:
+        # Node 0: granule_11182001013943
+        - "/ASTER/granule_11182001013943/Geolocation/Latitude"
+        # Node 1: granule_11182001013952
+        - "/ASTER/granule_11182001013952/Geolocation/Latitude"
+        # Node 2: granule_11182001014001
+        - "/ASTER/granule_11182001014001/Geolocation/Latitude"
+        # Node 3: granule_11182001014010
+        - "/ASTER/granule_11182001014010/Geolocation/Latitude"

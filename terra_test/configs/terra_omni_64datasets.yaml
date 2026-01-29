@@ -1,0 +1,109 @@
+# TERRA Fusion HDF5 Lat/Lon Dataset OMNI Configuration
+# 64 datasets: 8 granules × 4 sub-sensors × 2 (lat/lon)
+#
+# File: TERRA_BF_L1B_O10204_20011118010522_F000_V001.h5
+
+version: "1.0"
+
+transfers:
+  - name: "terra_lat_lon_assimilation"
+    description: "Load 64 TERRA lat/lon datasets into CTE"
+
+    # Source: HDF5 file
+    src: "hdf5::/mnt/common/datasets-staging/TERRA_BF_L1B_O10204_20011118010522_F000_V001.h5"
+
+    # Destination: Tag name in CTE
+    dst: "iowarp::terra_benchmark"
+
+    # Format type
+    format: "hdf5"
+
+    depends_on: ""
+    range_off: 0
+    range_size: 0
+
+    # Dataset filtering: 64 specific lat/lon datasets
+    # 8 granules × 4 sub-sensors (Geolocation, SWIR, TIR, VNIR) × 2 (Latitude, Longitude)
+    dataset_filter:
+      include_patterns:
+        # Granule 1: granule_11182001013943
+        - "/ASTER/granule_11182001013943/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013943/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013943/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013943/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/VNIR/Geolocation/Longitude"
+
+        # Granule 2: granule_11182001013952
+        - "/ASTER/granule_11182001013952/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013952/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013952/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013952/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013952/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013952/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013952/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013952/VNIR/Geolocation/Longitude"
+
+        # Granule 3: granule_11182001014001
+        - "/ASTER/granule_11182001014001/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014001/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014001/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014001/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014001/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014001/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014001/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014001/VNIR/Geolocation/Longitude"
+
+        # Granule 4: granule_11182001014010
+        - "/ASTER/granule_11182001014010/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014010/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014010/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014010/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014010/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014010/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014010/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014010/VNIR/Geolocation/Longitude"
+
+        # Granule 5: granule_11182001014019
+        - "/ASTER/granule_11182001014019/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014019/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014019/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014019/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014019/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014019/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014019/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014019/VNIR/Geolocation/Longitude"
+
+        # Granule 6: granule_11182001014028
+        - "/ASTER/granule_11182001014028/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014028/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014028/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014028/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014028/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014028/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014028/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014028/VNIR/Geolocation/Longitude"
+
+        # Granule 7: granule_11182001014036
+        - "/ASTER/granule_11182001014036/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014036/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014036/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014036/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014036/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014036/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014036/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014036/VNIR/Geolocation/Longitude"
+
+        # Granule 8: granule_11182001014045
+        - "/ASTER/granule_11182001014045/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014045/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014045/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014045/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014045/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014045/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001014045/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001014045/VNIR/Geolocation/Longitude"
+
+      exclude_patterns: []

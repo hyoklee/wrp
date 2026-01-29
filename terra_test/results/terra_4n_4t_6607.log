@@ -1,0 +1,17 @@
+==========================================
+TERRA Fusion I/O Benchmark Results
+==========================================
+
+Configuration:
+  Date: Wed Jan 28 01:33:51 PM CST 2026
+  Job ID: 6607
+  Nodes: 4
+  Tasks: 4
+  Total Tasks: 16
+
+Test Results:
+  OMNI Exit Code: 0
+  Elapsed Time: 136.678254709 seconds
+  Data Size: 5300 MB
+  Bandwidth: 38.77 MB/s
+

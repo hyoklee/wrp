@@ -1,0 +1,36 @@
+# TERRA Fusion HDF5 Lat/Lon Dataset OMNI Configuration
+# 8 datasets: 2 per node for 4 nodes
+#
+# File: TERRA_BF_L1B_O10204_20011118010522_F000_V001.h5
+
+version: "1.0"
+
+transfers:
+  - name: "terra_lat_lon_assimilation"
+    description: "Load 8 TERRA lat/lon datasets into CTE"
+
+    # Source: HDF5 file
+    src: "hdf5::/mnt/common/datasets-staging/TERRA_BF_L1B_O10204_20011118010522_F000_V001.h5"
+
+    # Destination: Tag name in CTE
+    dst: "iowarp::terra_benchmark"
+
+    # Format type
+    format: "hdf5"
+
+    depends_on: ""
+    range_off: 0
+    range_size: 0
+
+    # Dataset filtering: 8 specific lat/lon datasets (2 per node)
+    dataset_filter:
+      include_patterns:
+        # Granule 1: granule_11182001013943 (smaller datasets)
+        - "/ASTER/granule_11182001013943/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013943/SWIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/SWIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013943/TIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/TIR/Geolocation/Longitude"
+        - "/ASTER/granule_11182001013943/VNIR/Geolocation/Latitude"
+        - "/ASTER/granule_11182001013943/VNIR/Geolocation/Longitude"

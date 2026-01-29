@@ -1,0 +1,70 @@
+# TERRA Benchmark Runtime Configuration
+# This configuration is used for I/O performance benchmarking with TERRA HDF5 data
+#
+# Thread counts are configured via environment variable: CHI_SCHED_THREADS
+# Default: 8 threads
+
+# Worker thread configuration
+# These can be overridden via environment or SLURM settings
+workers:
+  sched_threads: 2
+  slow_threads: 2
+
+# Memory segment configuration
+memory:
+  main_segment_size: 8GB
+  client_data_segment_size: 4GB
+  runtime_data_segment_size: 4GB
+
+# Network configuration
+networking:
+  port: 5555
+  neighborhood_size: 1
+
+# Logging configuration
+logging:
+  level: info
+  file: /tmp/chimaera_terra.log
+
+# Runtime configuration
+runtime:
+  stack_size: 65536
+  queue_depth: 10000
+  local_sched: "default"
+  heartbeat_interval: 1000
+
+# Compose section - declarative pool creation
+compose:
+  # CTE Core module with storage configuration
+  - mod_name: wrp_cte_core
+    pool_name: terra_cte_pool
+    pool_query: local
+    pool_id: "512.0"
+
+    targets:
+      neighborhood: 1
+      default_target_timeout_ms: 60000
+      poll_period_ms: 5000
+
+    # Storage configuration
+    # Using RAM for high-speed I/O benchmarking
+    storage:
+      # Primary RAM storage
+      - path: "ram::terra_ram_tier"
+        bdev_type: "ram"
+        capacity_limit: "32GB"
+        score: 0.0
+
+    # Data Placement Engine configuration
+    dpe:
+      dpe_type: "max_bw"
+
+  # CAE Core module for data assimilation
+  - mod_name: wrp_cae_core
+    pool_name: terra_cae_pool
+    pool_query: local
+    pool_id: "400.0"
+
+# Distributed configuration
+distributed:
+  hostfile: /mnt/common/hyoklee/core.iowarp/terra_test/configs/hostfile_6596
