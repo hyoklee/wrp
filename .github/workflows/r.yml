@@ -14,11 +14,11 @@ jobs:
       matrix:
         os:
           - name: openbsd
-            architecture: ['x86_64', 'arm64']
+            architecture: [x86_64, arm64]
             version: '7.8'
             host: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: checkout
         uses: actions/checkout@v6
 
       - name: ${{ matrix.os.name }}
