@@ -24,13 +24,14 @@ endif()
 
 option(POCO "Enable POCO support" OFF)
 if(POCO)
-add_definitions(-DUSE_POCO)
-if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
+  add_definitions(-DUSE_POCO)
+  if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
     message(STATUS "OpenBSD detected: Using manual Poco path resolution")
     set(POCO_INCLUDE_DIR "/usr/local/include")
     set(POCO_LIB_DIR "/usr/local/lib")
-else()
+  else()
     find_package(Poco REQUIRED COMPONENTS Crypto Foundation Net NetSSL)
+  endif()
 endif()
 
 
