@@ -68,7 +68,7 @@ if(POCO)
     if(POCO_NETSSL)
         add_library(Poco::NetSSL UNKNOWN IMPORTED)
         set_target_properties(Poco::NetSSL PROPERTIES
-            IMPORTED_LOCATION "${POCO_NetSSL}"
+            IMPORTED_LOCATION "${POCO_NETSSL}"
             INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
         )
     else()
