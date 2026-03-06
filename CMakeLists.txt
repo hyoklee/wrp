@@ -29,11 +29,11 @@ if(POCO)
     message(STATUS "OpenBSD detected: Using manual Poco path resolution")
     set(POCO_INCLUDE_DIR "/usr/local/include")
     set(POCO_LIB_DIR "/usr/local/lib")
-    find_library(POCO_LIB_CRYPTO NAMES PocoCrytpto PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)
-    if(POCO_LIB_CRYPTO)
+    find_library(POCO_CRYPTO_LIB NAMES PocoCrytpto PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)
+    if(POCO_CRYPTO_LIB)
         add_library(Poco::Crypto UNKNOWN IMPORTED)
         set_target_properties(Poco::Crypto PROPERTIES
-            IMPORTED_LOCATION "${POCO_LIB_CRYPTO}"
+            IMPORTED_LOCATION "${POCO_CRYPTO_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
         )
     else()
