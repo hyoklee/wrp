@@ -19,6 +19,7 @@ jobs:
         cmake-version: 'latest'
     - name: install
       run: |
+        sudo apt-get update
         sudo apt-get install -y libpoco-dev libyaml-cpp-dev
         sudo apt-get install -y python3-pip python3-venv
     - name: test
