@@ -29,7 +29,7 @@ jobs:
           version: '${{ matrix.os.version }}'
           shell: bash
           run: |
-            sudo pkg_add cmake yaml-cpp zeromq
+            sudo pkg_add cmake poco yaml-cpp
             mkdir build
             cd build
             cmake -DSITE="obsd-7.8" -DBUILDNAME="omni/r" ..
