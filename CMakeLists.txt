@@ -29,29 +29,52 @@ if(POCO)
     message(STATUS "OpenBSD detected: Using manual Poco path resolution")
     set(POCO_INCLUDE_DIR "/usr/local/include")
     set(POCO_LIB_DIR "/usr/local/lib")
-    file(GLOB POCO_CRYPTO_LIB "/usr/local/lib/libPocoCrypto.so*")
-    if(POCO_CRYPTO_LIB)
+    
+    file(GLOB POCO_CRYPTO "/usr/local/lib/libPocoCrypto.so*")
+    if(POCO_CRYPTO)
         add_library(Poco::Crypto UNKNOWN IMPORTED)
         set_target_properties(Poco::Crypto PROPERTIES
-            IMPORTED_LOCATION "${POCO_CRYPTO_LIB}"
+            IMPORTED_LOCATION "${POCO_CRYPTO}"
             INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
         )
     else()
         message(FATAL_ERROR "Poco Crypto library not found in /usr/local/lib")
-    endif()    
-    find_library(POCO_LIB_FOUNDATION NAMES PocoFoundation PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)
-    if(POCO_LIB_FOUNDATION)
+    endif()
+    
+    file(GLOB POCO_FOUNDATION "/usr/local/lib/libPocoFoundation.so*")
+    if(POCO_FOUNDATION)
         add_library(Poco::Foundation UNKNOWN IMPORTED)
         set_target_properties(Poco::Foundation PROPERTIES
-            IMPORTED_LOCATION "${POCO_LIB_FOUNDATION}"
+            IMPORTED_LOCATION "${POCO_FOUNDATION}"
             INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
         )
     else()
         message(FATAL_ERROR "Poco Foundation library not found in /usr/local/lib")
     endif()    
     
-    find_library(POCO_LIB_NET NAMES PocoNet PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)
-    find_library(POCO_LIB_NETSSL NAMES PocoNetSSL PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)        
+    file(GLOB POCO_NET "/usr/local/lib/libPocoNet.so*")
+    if(POCO_NET)
+        add_library(Poco::Net UNKNOWN IMPORTED)
+        set_target_properties(Poco::Net PROPERTIES
+            IMPORTED_LOCATION "${POCO_NET}"
+            INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
+        )
+    else()
+        message(FATAL_ERROR "Poco Net library not found in /usr/local/lib")
+    endif()    
+
+
+    file(GLOB POCO_NETSSL "/usr/local/lib/libPocoNetSSL.so*")
+    if(POCO_NETSSL)
+        add_library(Poco::NetSSL UNKNOWN IMPORTED)
+        set_target_properties(Poco::NetSSL PROPERTIES
+            IMPORTED_LOCATION "${POCO_NetSSL}"
+            INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
+        )
+    else()
+        message(FATAL_ERROR "Poco NetSSL library not found in /usr/local/lib")
+    endif()    
+    
   else()
     find_package(Poco REQUIRED COMPONENTS Crypto Foundation Net NetSSL)
   endif()
