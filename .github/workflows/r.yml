@@ -14,7 +14,7 @@ jobs:
       matrix:
         os:
           - name: openbsd
-            architecture: x86_64
+            architecture: ['x86_64', 'arm64']
             version: '7.8'
             host: ubuntu-latest
     steps:
@@ -32,7 +32,12 @@ jobs:
             sudo pkg_add cmake yaml-cpp zeromq
             mkdir build
             cd build
-            cmake -DSITE:STRING="obsd-7.8" -DBUILDNAME="omni/r" ..
+            cmake -DSITE="obsd-7.8" -DBUILDNAME="omni/r" ..
+            ctest -C Release -D Experimental
+           cd ..
+            mkdir poco
+            cd poco
+            cmake -DPOCO=ON -DSITE="obsd-7.8" -DBUILDNAME="omni/r/poco" ..
             ctest -C Release -D Experimental
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
