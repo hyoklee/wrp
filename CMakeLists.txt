@@ -29,8 +29,27 @@ if(POCO)
     message(STATUS "OpenBSD detected: Using manual Poco path resolution")
     set(POCO_INCLUDE_DIR "/usr/local/include")
     set(POCO_LIB_DIR "/usr/local/lib")
-    find_library(POCO_LIB_CRYPTO NAMES PocoCrytpto PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)    
+    find_library(POCO_LIB_CRYPTO NAMES PocoCrytpto PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)
+    if(POCO_LIB_CRYPTO)
+        add_library(Poco::Crypto UNKNOWN IMPORTED)
+        set_target_properties(Poco::Crypto PROPERTIES
+            IMPORTED_LOCATION "${POCO_LIB_CRYPTO}"
+            INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
+        )
+    else()
+        message(FATAL_ERROR "Poco Crypto library not found in /usr/local/lib")
+    endif()    
     find_library(POCO_LIB_FOUNDATION NAMES PocoFoundation PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)
+    if(POCO_LIB_FOUNDATION)
+        add_library(Poco::Foundation UNKNOWN IMPORTED)
+        set_target_properties(Poco::Foundation PROPERTIES
+            IMPORTED_LOCATION "${POCO_LIB_FOUNDATION}"
+            INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include"
+        )
+    else()
+        message(FATAL_ERROR "Poco Foundation library not found in /usr/local/lib")
+    endif()    
+    
     find_library(POCO_LIB_NET NAMES PocoNet PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)
     find_library(POCO_LIB_NETSSL NAMES PocoNetSSL PATHS ${POCO_LIB_DIR} NO_DEFAULT_PATH)        
   else()
