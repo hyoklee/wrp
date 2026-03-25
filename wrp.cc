@@ -60,7 +60,12 @@ typedef SSIZE_T ssize_t;
 #include "Poco/Pipe.h"
 #include "Poco/PipeStream.h"
 #include "Poco/Process.h"
+#ifndef __OpenBSD__
 #include "Poco/SHA2Engine.h"
+#else
+#include <openssl/sha.h>
+#include <openssl/tls1.h>
+#endif
 #include "Poco/SharedMemory.h"
 #include "Poco/StreamCopier.h"
 #include "Poco/TemporaryFile.h"
@@ -85,14 +90,38 @@ int read_exact_bytes_from_offset(const char *filename, off_t offset,
 #ifdef USE_POCO
 std::string sha256_file(const std::string& filePath) {
     try {
-      
+
       Poco::FileInputStream fis(filePath);
-        
-      Poco::SHA2Engine sha256(Poco::SHA2Engine::SHA_256);
-        
+
+#ifdef __OpenBSD__
+      SHA256_CTX ctx;
+      SHA256_Init(&ctx);
+
       const size_t bufferSize = 8192;
       char buffer[bufferSize];
-        
+
+      while (!fis.eof()) {
+	fis.read(buffer, bufferSize);
+	std::streamsize bytesRead = fis.gcount();
+	if (bytesRead > 0) {
+	  SHA256_Update(&ctx, buffer, static_cast<unsigned>(bytesRead));
+	}
+      }
+
+      unsigned char digest[SHA256_DIGEST_LENGTH];
+      SHA256_Final(digest, &ctx);
+
+      std::stringstream ss;
+      for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+	ss << std::hex << std::setfill('0') << std::setw(2)
+	   << static_cast<int>(digest[i]);
+      }
+#else
+      Poco::SHA2Engine sha256(Poco::SHA2Engine::SHA_256);
+
+      const size_t bufferSize = 8192;
+      char buffer[bufferSize];
+
       while (!fis.eof()) {
 	fis.read(buffer, bufferSize);
 	std::streamsize bytesRead = fis.gcount();
@@ -100,15 +129,16 @@ std::string sha256_file(const std::string& filePath) {
 	  sha256.update(buffer, static_cast<unsigned>(bytesRead));
 	}
       }
-        
+
       const Poco::DigestEngine::Digest& digest = sha256.digest();
-        
+
       std::stringstream ss;
       for (unsigned char b : digest) {
 	ss << std::hex << std::setfill('0') << std::setw(2)
 	   << static_cast<int>(b);
       }
-        
+#endif
+
       return ss.str();
     }
     catch (const Poco::Exception& ex) {
@@ -194,7 +224,7 @@ int put(std::string name, std::string tags, std::string path,
     std::cout << "checking existing buffer '" << name << "'...";
     if (file.exists()) {
       std::cout << "yes" << std::endl;
-      return 0;
+      return write_meta(name, tags);
     }
     std::cout << "no" << std::endl;
 
@@ -209,13 +239,19 @@ int put(std::string name, std::string tags, std::string path,
 
     std::cout << "putting " << nbyte << " bytes into '"
 	      <<  name << "' buffer...";
+#ifdef __OpenBSD__
+    {
+      std::ofstream wfs(name, std::ios::binary | std::ios::trunc);
+      wfs.write(reinterpret_cast<const char*>(buffer), nbyte);
+    }
+#else
     Poco::SharedMemory shm(file, Poco::SharedMemory::AM_WRITE);
-	    
     char* data = static_cast<char*>(shm.begin());
     std::memcpy(data, (const char *)buffer, nbyte);
+#endif
     std::cout << "done" << std::endl;
-#ifdef DEBUG    
-    std::cout << "wrote '" << shm.begin() << "' to '" << name << "' buffer."
+#ifdef DEBUG
+    std::cout << "wrote '" << nbyte << "' bytes to '" << name << "' buffer."
 	      << std::endl;
 #endif
 
@@ -467,14 +503,24 @@ int download(const std::string& url, const std::string& outputFileName,
 #ifdef USE_POCO    
     try {
       std::string currentUrl = url;
-      const std::string caCertFile = "../cacert.pem"; 
+#ifdef __OpenBSD__
+      Poco::Net::Context::Ptr context
+	= new Poco::Net::Context(Poco::Net::Context::CLIENT_USE,
+				 "",
+				 "", "/etc/ssl/cert.pem",
+				 Poco::Net::Context::VERIFY_NONE,
+				 9, false);
+      SSL_CTX_set_min_proto_version(context->sslContext(), TLS1_2_VERSION);
+#else
+      const std::string caCertFile = "../cacert.pem";
 
       Poco::Net::Context::Ptr context
 	= new Poco::Net::Context(Poco::Net::Context::CLIENT_USE,
-				 "", 
+				 "",
 				 "", "",
 				 Poco::Net::Context::VERIFY_NONE, // STRICT
-				 9, true, caCertFile);	
+				 9, true, caCertFile);
+#endif
 
       int redirectCount = 0;
       int maxRedirects = 20; // Match Chrome & Firefox
@@ -535,7 +581,10 @@ int download(const std::string& url, const std::string& outputFileName,
 	    status == Poco::Net::HTTPResponse::HTTP_FOUND ||
 	    status == Poco::Net::HTTPResponse::HTTP_SEE_OTHER ||
 	    status == Poco::Net::HTTPResponse::HTTP_TEMPORARY_REDIRECT ||
-	    status == Poco::Net::HTTPResponse::HTTP_PERMANENT_REDIRECT)
+#ifndef __OpenBSD__
+	    status == Poco::Net::HTTPResponse::HTTP_PERMANENT_REDIRECT ||
+#endif
+	    false)
 	  {
 	    if (response.has("Location")) {
 	      currentUrl = response.get("Location");
@@ -853,27 +902,30 @@ int read_omni(std::string input_file) {
   }
   
 #if USE_POCO
+  bool downloadOk = false;
   if (!uri.empty()){
     long long start = -1;
-    long long end = -1;    
+    long long end = -1;
     if(offset >=0) {
       start = (long long)offset;
     }
     if(nbyte >=0) {
       end = (long long) (offset + nbyte);
     }
-    
-    if(download(uri, name, start, end) != 0)
+
+    if(download(uri, name, start, end) == 0)
+      downloadOk = true;
+    else
       std::cerr << "Error: downloading '"  << uri
 		<< "' failed "
 		<< std::endl;
   }
-  
+
   if (!hash.empty()){
-    std::string h;	  
+    std::string h;
     if(!path.empty())
       h = sha256_file(path);
-    if(!uri.empty())
+    if(!uri.empty() && downloadOk)
       h = sha256_file(name);
 	  
     if (hash != h){

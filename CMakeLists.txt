@@ -148,6 +148,9 @@ endif()
 
 if(POCO)
   target_link_libraries(wrp Poco::Crypto Poco::Foundation Poco::Net Poco::NetSSL)
+  if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
+    target_link_libraries(wrp ssl crypto)
+  endif()
 endif()
 
 option(COV "Enable COVERAGE support" OFF)
