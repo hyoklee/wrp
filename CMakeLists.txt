@@ -1,4 +1,16 @@
 cmake_minimum_required(VERSION 3.22)
+
+if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT EXISTS "${CMAKE_TOOLCHAIN_FILE}")
+  message(FATAL_ERROR
+    "Toolchain file not found: ${CMAKE_TOOLCHAIN_FILE}\n"
+    "Please install vcpkg:\n"
+    "  git clone https://github.com/microsoft/vcpkg ~/vcpkg\n"
+    "  ~/vcpkg/bootstrap-vcpkg.sh\n"
+    "Then re-run cmake with:\n"
+    "  -DCMAKE_TOOLCHAIN_FILE=~/vcpkg/scripts/buildsystems/vcpkg.cmake"
+  )
+endif()
+
 project(OMNI)
 
 include(CTest)
