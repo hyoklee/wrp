@@ -13,7 +13,15 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#if defined(__has_include) && __has_include(<filesystem>)
 #include <filesystem>
+#define WRP_HAS_FILESYSTEM 1
+#else
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
+#define WRP_HAS_FILESYSTEM 0
+#endif
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -1067,14 +1075,30 @@ int set_blackhole(){
       return -1;
     }
   }  
-#else
-  if (std::filesystem::exists(".blackhole") == true) {
+#elif WRP_HAS_FILESYSTEM
+  if (std::filesystem::exists(".blackhole")) {
      std::cout << "yes" << std::endl;
   }
   else {
     std::cout << "no" << std::endl;
     std::cout << "launching a new IOWarp runtime...";
     if (std::filesystem::create_directory(".blackhole")) {
+      std::cout << "done" << std::endl;
+      return 0;
+    } else {
+      std::cerr << "Error: failed to create .blackhole directory" << std::endl;
+      return -1;
+    }
+  }
+#else
+  struct stat st{};
+  if (stat(".blackhole", &st) == 0 && S_ISDIR(st.st_mode)) {
+     std::cout << "yes" << std::endl;
+  }
+  else {
+    std::cout << "no" << std::endl;
+    std::cout << "launching a new IOWarp runtime...";
+    if (mkdir(".blackhole", 0755) == 0) {
       std::cout << "done" << std::endl;
       return 0;
     } else {
