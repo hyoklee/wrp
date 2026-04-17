@@ -763,7 +763,7 @@ int read_omni(std::string input_file) {
 
 	if(key == "path") {
 	  path = it->second.as<std::string>();
-	  
+
 #ifdef USE_POCO
           if (transfer != "globus") {
 	    Poco::File file(path);
@@ -771,11 +771,30 @@ int read_omni(std::string input_file) {
 	      std::cerr << "Error: '"
 			<< path
 			<< "' does not exist"
-			<< std::endl;    	
+			<< std::endl;
 	      return -1;
 	    }
 	  }
 #endif
+	}
+
+	if (key == "src") {
+	  std::string original = it->second.as<std::string>();
+	  if (!original.empty() && original[0] == '>') {
+	    path = original.substr(1);  // strip '>' and wait for file
+#ifdef USE_POCO
+	    Poco::File f(path);
+	    while (!f.exists()) {
+	      Poco::Thread::sleep(100);
+	    }
+#else
+	    while (!std::filesystem::exists(path)) {
+	      usleep(100000);
+	    }
+#endif
+	  } else {
+	    path = original;
+	  }
 	}
 	if(key == "did") {
 	  did = it->second.as<std::string>();
@@ -1209,7 +1228,7 @@ int main(int argc, char* argv[]) {
 	if (set_blackhole() != 0) {
 	  return 1;
 	}
-	
+
         std::string name = argv[2];
         return read_omni(name);
 	

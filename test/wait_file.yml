@@ -1,0 +1,19 @@
+# Test OMNI format for file waiting functionality
+name: wait
+
+tags:
+  - test
+  - file-waiting
+  - async
+
+# Using '>' prefix to wait for file to arrive
+src: ">cae"
+
+# SHA256 (expected hash once file arrives)
+hash: ee57979c8f7d65888e7ef97c170b0a525db0f902aaa17d2e72fd38fef5883250
+
+# bytes (expected size once file arrives)
+size: 31
+
+# Waits forever until file becomes available
+# Useful for workflows where input files are generated dynamically or arrive with delays
