@@ -2,7 +2,7 @@ name: ubu omni r
 
 on:
   push:
-    branches: main-
+    branches: main
 
 jobs:
   build:

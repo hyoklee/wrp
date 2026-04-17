@@ -3,10 +3,10 @@ name: Python Pip Commands Across OSes
 on:
   push:
     branches:
-      - main-
+      - main
   pull_request:
     branches:
-      - main-
+      - main
 
 jobs:
   build-and-test:
@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         # Define the operating systems to run on
-        os: [ubuntu-latest, ubuntu-22.04, windows-2025, windows-latest, macos-15, macos-latest, macos-13]
+        os: [ubuntu-latest, ubuntu-22.04, windows-2025, windows-latest, macos-15, macos-latest, macos-14]
         # Define the Python versions to test against
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
 
