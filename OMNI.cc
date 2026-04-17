@@ -98,8 +98,10 @@ typedef SSIZE_T ssize_t;
 #include "Poco/Pipe.h"
 #include "Poco/PipeStream.h"
 #include "Poco/Process.h"
+#ifndef __OpenBSD__
 #include "Poco/SHA2Engine.h"
 #include "Poco/HMACEngine.h"
+#endif
 #include "Poco/SharedMemory.h"
 #include "Poco/StreamCopier.h"
 #include "Poco/TemporaryFile.h"
@@ -108,7 +110,7 @@ typedef SSIZE_T ssize_t;
 
 // Compatibility wrapper for older POCO versions that don't have SHA2Engine256
 // SHA2Engine256 was added in POCO 1.12.0 (0x010C0000)
-#ifdef USE_POCO
+#if defined(USE_POCO) && !defined(__OpenBSD__)
 #include "Poco/Version.h"
 #if POCO_VERSION < 0x010C0000
 namespace Poco {
@@ -125,6 +127,68 @@ public:
 }  // namespace Poco
 #endif
 #endif
+
+#ifdef USE_POCO
+// Cross-platform SHA256 and HMAC-SHA256 helpers used by WriteS3
+#ifdef __OpenBSD__
+// OpenBSD: use native sha2.h and LibreSSL (no Poco SHA2Engine available)
+#include <sha2.h>
+#include <openssl/hmac.h>
+#include <openssl/evp.h>
+
+static std::string sha256_hex_impl(const std::string& data) {
+  uint8_t hash[SHA256_DIGEST_LENGTH];
+  SHA2_CTX ctx;
+  SHA256Init(&ctx);
+  SHA256Update(&ctx, reinterpret_cast<const uint8_t*>(data.data()), data.size());
+  SHA256Final(hash, &ctx);
+  std::ostringstream ss;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(hash[i]);
+  return ss.str();
+}
+
+static std::vector<unsigned char> hmac_sha256_raw_impl(const std::string& key,
+                                                        const std::string& data) {
+  unsigned char result[EVP_MAX_MD_SIZE];
+  unsigned int result_len = 0;
+  HMAC(EVP_sha256(), key.data(), static_cast<int>(key.size()),
+       reinterpret_cast<const unsigned char*>(data.data()), data.size(),
+       result, &result_len);
+  return std::vector<unsigned char>(result, result + result_len);
+}
+
+static std::string hmac_sha256_hex_impl(const std::string& key,
+                                         const std::string& data) {
+  auto raw = hmac_sha256_raw_impl(key, data);
+  std::ostringstream ss;
+  for (unsigned char b : raw)
+    ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(b);
+  return ss.str();
+}
+#else
+// Non-OpenBSD: use Poco SHA2Engine256 and HMACEngine
+static std::string sha256_hex_impl(const std::string& data) {
+  Poco::SHA2Engine256 engine;
+  engine.update(data);
+  return Poco::DigestEngine::digestToHex(engine.digest());
+}
+
+static std::vector<unsigned char> hmac_sha256_raw_impl(const std::string& key,
+                                                        const std::string& data) {
+  Poco::HMACEngine<Poco::SHA2Engine256> hmac(key);
+  hmac.update(data);
+  return hmac.digest();
+}
+
+static std::string hmac_sha256_hex_impl(const std::string& key,
+                                         const std::string& data) {
+  Poco::HMACEngine<Poco::SHA2Engine256> hmac(key);
+  hmac.update(data);
+  return Poco::DigestEngine::digestToHex(hmac.digest());
+}
+#endif  // __OpenBSD__
+#endif  // USE_POCO
 
 #ifdef USE_REDIS
 #include "Poco/Redis/Client.h"
@@ -223,6 +287,13 @@ int OMNI::List() {
 // Private method implementations
 #ifdef USE_POCO
 std::string OMNI::Sha256File(const std::string& file_path) {
+#ifdef __OpenBSD__
+  char result[SHA256_DIGEST_STRING_LENGTH];
+  if (SHA256File(file_path.c_str(), result) == nullptr) {
+    throw std::runtime_error("Error: calculating SHA256 of file: " + file_path);
+  }
+  return std::string(result);
+#else
   try {
     Poco::FileInputStream fis(file_path);
     Poco::SHA2Engine sha256(Poco::SHA2Engine::SHA_256);
@@ -247,6 +318,7 @@ std::string OMNI::Sha256File(const std::string& file_path) {
   } catch (const Poco::Exception& ex) {
     throw std::runtime_error("Error: calculating SHA256 - " + ex.displayText());
   }
+#endif
 }
 #endif
 
@@ -1565,6 +1637,17 @@ int OMNI::PutData(const std::string& name, const std::string& tags,
 #endif
 
     // Fallback to SharedMemory (original implementation)
+#ifdef __OpenBSD__
+    // OpenBSD: Poco::SharedMemory is unreliable; write directly to file
+    {
+      std::ofstream ofs_data(name, std::ios::binary | std::ios::trunc);
+      ofs_data.write(reinterpret_cast<const char*>(buffer), nbyte);
+      ofs_data.close();
+      if (!quiet_) {
+        std::cout << "done (direct file)" << std::endl;
+      }
+    }
+#else
     Poco::SharedMemory shm(file, Poco::SharedMemory::AM_WRITE);
 
     char* data = static_cast<char*>(shm.begin());
@@ -1578,6 +1661,7 @@ int OMNI::PutData(const std::string& name, const std::string& tags,
                 << std::endl;
     }
 #endif
+#endif  // __OpenBSD__
 
   } catch (Poco::Exception& e) {
     std::cerr << "Poco Exception: " << e.displayText() << std::endl;
@@ -2015,9 +2099,7 @@ int OMNI::WriteS3(const std::string& dest, char* ptr) {
   }
 
   // Compute SHA256 hash of payload
-  Poco::SHA2Engine256 sha256;
-  sha256.update(content);
-  std::string payload_hash = Poco::DigestEngine::digestToHex(sha256.digest());
+  std::string payload_hash = sha256_hex_impl(content);
 
   // Get current timestamp
   auto now = std::chrono::system_clock::now();
@@ -2058,9 +2140,7 @@ int OMNI::WriteS3(const std::string& dest, char* ptr) {
                     << payload_hash;
 
   // Hash canonical request
-  Poco::SHA2Engine256 sha256_canon;
-  sha256_canon.update(canonical_request.str());
-  std::string canonical_request_hash = Poco::DigestEngine::digestToHex(sha256_canon.digest());
+  std::string canonical_request_hash = sha256_hex_impl(canonical_request.str());
 
   // Create string to sign
   std::string algorithm = "AWS4-HMAC-SHA256";
@@ -2073,25 +2153,11 @@ int OMNI::WriteS3(const std::string& dest, char* ptr) {
 
   // Calculate signature using HMAC-SHA256
   std::string date_key_str = "AWS4" + secret_key;
-  Poco::HMACEngine<Poco::SHA2Engine256> hmac1(date_key_str);
-  hmac1.update(date_stamp);
-  auto date_key = hmac1.digest();
-
-  Poco::HMACEngine<Poco::SHA2Engine256> hmac2(std::string(date_key.begin(), date_key.end()));
-  hmac2.update(region);
-  auto region_key = hmac2.digest();
-
-  Poco::HMACEngine<Poco::SHA2Engine256> hmac3(std::string(region_key.begin(), region_key.end()));
-  hmac3.update("s3");
-  auto service_key = hmac3.digest();
-
-  Poco::HMACEngine<Poco::SHA2Engine256> hmac4(std::string(service_key.begin(), service_key.end()));
-  hmac4.update("aws4_request");
-  auto signing_key = hmac4.digest();
-
-  Poco::HMACEngine<Poco::SHA2Engine256> hmac5(std::string(signing_key.begin(), signing_key.end()));
-  hmac5.update(string_to_sign.str());
-  std::string signature = Poco::DigestEngine::digestToHex(hmac5.digest());
+  auto date_key = hmac_sha256_raw_impl(date_key_str, date_stamp);
+  auto region_key = hmac_sha256_raw_impl(std::string(date_key.begin(), date_key.end()), region);
+  auto service_key = hmac_sha256_raw_impl(std::string(region_key.begin(), region_key.end()), "s3");
+  auto signing_key = hmac_sha256_raw_impl(std::string(service_key.begin(), service_key.end()), "aws4_request");
+  std::string signature = hmac_sha256_hex_impl(std::string(signing_key.begin(), signing_key.end()), string_to_sign.str());
 
   // Build authorization header
   std::ostringstream authorization;
@@ -2140,9 +2206,7 @@ int OMNI::WriteS3(const std::string& dest, char* ptr) {
       bucket_payload = xml.str();
 
       // Calculate SHA256 of the XML payload
-      Poco::SHA2Engine256 sha256_payload;
-      sha256_payload.update(bucket_payload);
-      bucket_payload_hash = Poco::DigestEngine::digestToHex(sha256_payload.digest());
+      bucket_payload_hash = sha256_hex_impl(bucket_payload);
     } else {
       // For us-east-1, use empty payload
       bucket_payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
@@ -2165,9 +2229,7 @@ int OMNI::WriteS3(const std::string& dest, char* ptr) {
                               << bucket_payload_hash;
 
     // Hash canonical request
-    Poco::SHA2Engine256 sha256_bucket_canon;
-    sha256_bucket_canon.update(bucket_canonical_request.str());
-    std::string bucket_canonical_request_hash = Poco::DigestEngine::digestToHex(sha256_bucket_canon.digest());
+    std::string bucket_canonical_request_hash = sha256_hex_impl(bucket_canonical_request.str());
 
     // Create string to sign
     std::ostringstream bucket_string_to_sign;
@@ -2177,9 +2239,7 @@ int OMNI::WriteS3(const std::string& dest, char* ptr) {
                           << bucket_canonical_request_hash;
 
     // Calculate signature (reuse the signing key from earlier)
-    Poco::HMACEngine<Poco::SHA2Engine256> hmac_bucket(std::string(signing_key.begin(), signing_key.end()));
-    hmac_bucket.update(bucket_string_to_sign.str());
-    std::string bucket_signature = Poco::DigestEngine::digestToHex(hmac_bucket.digest());
+    std::string bucket_signature = hmac_sha256_hex_impl(std::string(signing_key.begin(), signing_key.end()), bucket_string_to_sign.str());
 
     // Build authorization header
     std::ostringstream bucket_authorization;
@@ -2382,7 +2442,11 @@ int OMNI::Download(const std::string& url, const std::string& output_file_name,
           status == Poco::Net::HTTPResponse::HTTP_FOUND ||
           status == Poco::Net::HTTPResponse::HTTP_SEE_OTHER ||
           status == Poco::Net::HTTPResponse::HTTP_TEMPORARY_REDIRECT ||
+#ifdef __OpenBSD__
+          status == 308 /* HTTP_PERMANENT_REDIRECT - not in POCO 1.4.x */) {
+#else
           status == Poco::Net::HTTPResponse::HTTP_PERMANENT_REDIRECT) {
+#endif
         if (response.has("Location")) {
           current_url = response.get("Location");
           if (!quiet_) {
@@ -2965,12 +3029,25 @@ int OMNI::ReadOmni(const std::string& input_file) {
 #endif
 
         // Fallback to SharedMemory (original implementation)
+#ifdef __OpenBSD__
+        // OpenBSD: Poco::SharedMemory is unreliable; read directly from file
+        {
+          std::ifstream ifs_data(name, std::ios::binary);
+          std::string file_content((std::istreambuf_iterator<char>(ifs_data)),
+                                   std::istreambuf_iterator<char>());
+          if (!quiet_) {
+            std::cout << "read from '" << name << "' buffer (direct file)." << std::endl;
+          }
+          WriteS3(dest, file_content.data());
+        }
+#else
         Poco::SharedMemory shm_r(file, Poco::SharedMemory::AM_READ);
         if (!quiet_) {
           std::cout << "read '" << shm_r.begin() << "' from '" << name
                     << "' buffer (SharedMemory)." << std::endl;
         }
         WriteS3(dest, shm_r.begin());
+#endif  // __OpenBSD__
 
         // Final WriteS3 call with NULL to finalize
         WriteS3(dest, NULL);
