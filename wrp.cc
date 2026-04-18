@@ -222,9 +222,13 @@ int put(std::string name, std::string tags, std::string path,
   try {
     Poco::File file(name);
     std::cout << "checking existing buffer '" << name << "'...";
-    if (file.exists()) {
+    if (file.exists() &&
+        file.getSize() == static_cast<Poco::File::FileSize>(sharedMemorySize)) {
       std::cout << "yes" << std::endl;
       return write_meta(name, tags);
+    }
+    if (file.exists()) {
+      file.remove();
     }
     std::cout << "no" << std::endl;
 
@@ -243,6 +247,8 @@ int put(std::string name, std::string tags, std::string path,
     {
       std::ofstream wfs(name, std::ios::binary | std::ios::trunc);
       wfs.write(reinterpret_cast<const char*>(buffer), nbyte);
+      char null_byte = '\0';
+      wfs.write(&null_byte, 1);
     }
 #else
     Poco::SharedMemory shm(file, Poco::SharedMemory::AM_WRITE);

@@ -1543,12 +1543,16 @@ int OMNI::PutData(const std::string& name, const std::string& tags,
     if (!quiet_) {
       std::cout << "checking existing buffer '" << name << "'...";
     }
-    if (file.exists()) {
+    if (file.exists() &&
+        file.getSize() == static_cast<Poco::File::FileSize>(shared_memory_size)) {
       if (!quiet_) {
         std::cout << "yes" << std::endl;
       }
       // Still write metadata even if buffer exists
       return WriteMeta(name, tags);
+    }
+    if (file.exists()) {
+      file.remove();
     }
     if (!quiet_) {
       std::cout << "no" << std::endl;
