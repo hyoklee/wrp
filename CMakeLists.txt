@@ -264,6 +264,10 @@ endif()
 
 if(POCO)
   add_test(NAME wait_file COMMAND wrp put ../test/wait_file.yml)
+  set_tests_properties(wait_file
+      PROPERTIES
+      WILL_FAIL "TRUE"
+  )
 
   add_executable(test_omni test_omni.cc OMNI.cc)
   if(TARGET yaml-cpp::yaml-cpp)

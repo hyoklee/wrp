@@ -24,7 +24,6 @@ jobs:
         run: |
           env
           export CMAKE_PREFIX_PATH=$CONDA_PREFIX
-          cd omni
           conda install -y conda-build
           conda install -y conda-verify
           conda install -y anaconda-client
