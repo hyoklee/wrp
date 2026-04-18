@@ -10,10 +10,10 @@ tags:
 src: ">cae"
 
 # SHA256 (expected hash once file arrives)
-hash: 0686595564a7334c89b3501c155e6b6b53da2beeafb4dae956e290885f164c62
+hash: ee57979c8f7d65888e7ef97c170b0a525db0f902aaa17d2e72fd38fef5883250
 
 # bytes (expected size once file arrives)
-size: 30
+size: 31
 
 # Waits forever until file becomes available
 # Useful for workflows where input files are generated dynamically or arrive with delays

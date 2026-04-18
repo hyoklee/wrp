@@ -1642,6 +1642,8 @@ int OMNI::PutData(const std::string& name, const std::string& tags,
     {
       std::ofstream ofs_data(name, std::ios::binary | std::ios::trunc);
       ofs_data.write(reinterpret_cast<const char*>(buffer), nbyte);
+      char null_byte = '\0';
+      ofs_data.write(&null_byte, 1);
       ofs_data.close();
       if (!quiet_) {
         std::cout << "done (direct file)" << std::endl;
