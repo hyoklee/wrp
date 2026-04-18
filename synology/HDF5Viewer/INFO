@@ -1,7 +1,0 @@
-package="HDF5Viewer"
-version="0.0.0-0001"
-os_min_ver="7.0-40000"
-description="HDF5 Viewer for Synology NAS"
-displayname="HDF5 Viewer"
-maintainer="HDF Group"
-maintainer_url="https://www.hdfgroup.org"

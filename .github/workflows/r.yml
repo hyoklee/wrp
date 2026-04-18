@@ -17,6 +17,12 @@ jobs:
             architecture: x86_64
             version: '7.8'
             host: ubuntu-latest
+            site: obsd-7.8
+          - name: openbsd
+            architecture: arm64
+            version: '7.8'
+            host: ubuntu-latest
+            site: obsd-7.8.arm64
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -32,12 +38,12 @@ jobs:
             sudo pkg_add cmake poco yaml-cpp
             mkdir build
             cd build
-            cmake -DSITE="obsd-7.8" -DBUILDNAME="omni/r" ..
+            cmake -DSITE="${{ matrix.os.site }}" -DBUILDNAME="omni/r" ..
             ctest -C Release -D Experimental
             cd ..
             mkdir poco
             cd poco
-            cmake -DPOCO=ON -DSITE="obsd-7.8" -DBUILDNAME="omni/r/poco" ..
+            cmake -DPOCO=ON -DSITE="${{ matrix.os.site }}" -DBUILDNAME="omni/r/poco" ..
             ctest -C Release -D Experimental
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
