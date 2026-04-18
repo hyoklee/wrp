@@ -1,4 +1,4 @@
-name: mac-13 conda
+name: mac-14 conda
 
 on:
   workflow_dispatch:

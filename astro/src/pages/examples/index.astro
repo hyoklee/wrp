@@ -1,0 +1,186 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Examples - Content Assimilation Engine">
+  <div class="prose max-w-none">
+    <h1>Examples</h1>
+    <p>
+      This page demonstrates various usage examples of the Content Assimilation Engine (CAE)
+      using different data sources and protocols. Each example shows the YAML configuration
+      format used to describe data operations.
+    </p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+
+      <!-- POSIX Example -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">POSIX File Operations</h2>
+        <p class="text-gray-600 mb-4">
+          Example of processing a local CSV file using POSIX file operations with offset and size specifications.
+        </p>
+        <pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto"><code># Sample OMNI format in YAML
+name: cae
+
+tags:
+  - ai
+  - material sicence
+  - utah
+
+src: "../../data/A46_xx.csv"
+
+# SHA256
+hash: a4580e7e8b49255a3e10599c5222a021bdc9efec6b36c2e6c99f9f05b6dc63f3
+
+# bytes
+size: 106922
+
+# lseek()
+offset: 39
+
+# pread, read()
+nbyte: 30
+
+# lambda script
+run: "../test/lambda.sh"
+
+dst: "s3://iowarp/cae.parquet"</code></pre>
+      </div>
+
+      <!-- HTTP Example -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">HTTP Data Access</h2>
+        <p class="text-gray-600 mb-4">
+          Example of accessing remote HDF5 data via HTTP from NASA NSIDC ATL08 dataset.
+        </p>
+        <pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto"><code>name: http
+
+tags:
+  - h5
+  - NASA
+  - NSIDC
+  - ATL08
+  - github
+
+src: "https://media.githubusercontent.com/media/hyoklee/kerchunk/refs/heads/main/data/ATL08_20181014084920_02400109_003_01.h5"
+
+# SHA256
+hash: 2f8cde944f1fea90c99f7b5f26045c811864e6199940c1d6d043062405637d19
+
+# bytes
+size: 700398</code></pre>
+      </div>
+
+      <!-- Range GET Example -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Range GET Operations</h2>
+        <p class="text-gray-600 mb-4">
+          Example of performing HTTP range requests to fetch specific byte ranges from remote HDF5 files.
+        </p>
+        <pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto"><code>name: rget
+
+tags:
+  - github
+  - h5
+  - NASA
+  - NSIDC
+  - ATL08
+  - delta_time
+  - deflate
+
+src: "https://media.githubusercontent.com/media/hyoklee/kerchunk/refs/heads/main/data/ATL08_20181014084920_02400109_003_01.h5"
+
+# bytes
+size: 2132
+
+# range-get using [1]
+offset: 329275
+
+nbyte: 2132
+
+# SHA256
+hash: f6d0c1b16f3242881d49ffd6a9089fa7109a47e07af48bbcff7fda45d73b61dd
+
+run: "../test/rget.sh"
+
+dst: "s3://iowarp/rget.parquet"</code></pre>
+      </div>
+
+      <!-- HDF5 Example -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">HDF5 Dataset Access</h2>
+        <p class="text-gray-600 mb-4">
+          Example of accessing specific datasets within HDF5 files with hyperslab selection.
+        </p>
+        <pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto"><code>name: hdf5
+tags:
+   - HDF5
+   - 2D
+   - float
+
+src: "hdf5://../../data/A46_xx.h5/data/block0_values"
+start: [0, 0]
+count: [1, 3]
+stride: [1, 1]
+
+# lambda script
+run: "../test/hdf5.sh"
+
+dst: "s3://iowarp/h5.parquet"</code></pre>
+      </div>
+
+      <!-- Globus Example -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Globus Data Transfer</h2>
+        <p class="text-gray-600 mb-4">
+          Example of transferring data using Globus endpoints for high-performance data movement.
+        </p>
+        <pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto"><code>name: globus
+
+tags:
+  - globus
+  - AFRL
+  - csv
+
+src: globus://82f1b5c6-6e9b-11e5-ba47-22000b92c6ec/afrl-challenge-data/musinski_afrl_am_package_v2.1/Calibration Data/Strain Data/A46_xx.csv
+dst: globus://f42284c6-3511-11f0-8090-0ea40f72f625/~/a46_xx.csv</code></pre>
+      </div>
+
+      <!-- Additional Info -->
+      <div class="bg-blue-50 p-6 rounded-lg">
+        <h2 class="text-xl font-semibold mb-4">Configuration Reference</h2>
+        <div class="space-y-2">
+          <p><strong>name:</strong> Identifier for the operation</p>
+          <p><strong>tags:</strong> Metadata labels for categorization</p>
+          <p><strong>src:</strong> Source data location (file path, URL, or Globus endpoint)</p>
+          <p><strong>dst:</strong> Destination for processed data</p>
+          <p><strong>hash:</strong> SHA256 checksum for data verification</p>
+          <p><strong>size:</strong> Data size in bytes</p>
+          <p><strong>offset/nbyte:</strong> Byte range specifications for partial reads</p>
+          <p><strong>start/count/stride:</strong> HDF5 hyperslab selection parameters</p>
+          <p><strong>run:</strong> Processing script to execute on the data</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-8 bg-gray-50 p-6 rounded-lg">
+      <h2>Usage</h2>
+      <p>
+        These YAML configuration files define data operations for the Content Assimilation Engine.
+        Each configuration specifies the source data, processing parameters, and destination for
+        the transformed data. The engine supports multiple protocols including POSIX file I/O,
+        HTTP, HDF5, and Globus for diverse data access patterns.
+      </p>
+
+      <h3 class="mt-4 font-semibold">Key Features:</h3>
+      <ul class="list-disc list-inside mt-2 space-y-1">
+        <li>Support for multiple data sources and protocols</li>
+        <li>Byte-level precision for partial data access</li>
+        <li>Data integrity verification with checksums</li>
+        <li>Flexible metadata tagging system</li>
+        <li>Integration with cloud storage and high-performance data transfer</li>
+      </ul>
+    </div>
+  </div>
+</Layout>
