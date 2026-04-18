@@ -2659,6 +2659,52 @@ int OMNI::ReadOmni(const std::string& input_file) {
         if (key == "offset") {
           offset = it->second.as<size_t>();
         }
+        if (key == "size") {
+          size_t expected_size = it->second.as<size_t>();
+          if (wait_for_file && !path.empty() && f == true) {
+            if (!quiet_) {
+              std::cout << "Waiting for file '" << path
+                        << "' to have " << expected_size << " bytes";
+              if (wait_config.timeout_seconds > 0) {
+                std::cout << " (timeout: " << wait_config.timeout_seconds << " seconds)";
+              }
+              std::cout << "..." << std::endl;
+            }
+            auto start_time = std::chrono::steady_clock::now();
+            bool file_ready = false;
+            while (!file_ready) {
+#ifdef USE_POCO
+              Poco::File file(path);
+              if (file.exists() && file.getSize() >= static_cast<Poco::File::FileSize>(expected_size)) {
+                file_ready = true;
+                break;
+              }
+#else
+              if (std::filesystem::exists(path)) {
+                if (std::filesystem::file_size(path) >= expected_size) {
+                  file_ready = true;
+                  break;
+                }
+              }
+#endif
+              if (wait_config.timeout_seconds > 0) {
+                auto elapsed = std::chrono::steady_clock::now() - start_time;
+                auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
+                if (elapsed_seconds >= wait_config.timeout_seconds) {
+                  std::cerr << "Error: Timeout waiting for file '" << path
+                            << "' to have " << expected_size << " bytes after "
+                            << elapsed_seconds << " seconds" << std::endl;
+                  return -1;
+                }
+              }
+              std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            if (!quiet_) {
+              std::cout << "File '" << path
+                        << "' is now ready with " << expected_size << " bytes, continuing..." << std::endl;
+            }
+          }
+        }
         if (key == "nbyte") {
           nbyte = it->second.as<size_t>();
 
