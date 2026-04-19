@@ -1,0 +1,17 @@
+name: agent
+tags:
+  - ai
+  - prompt
+
+# Input file for context
+src: "../data/A46_xx.csv"
+
+# Prompt sent to the AI agent
+ask: "What is the first column name in this CSV file? Answer in one word."
+# ask: "Average 3rd column."
+
+# AI agent command (claude CLI)
+run: claude --dangerously-skip-permissions
+
+# Output file for the agent's response
+dst: agent_output.md
