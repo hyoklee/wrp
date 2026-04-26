@@ -16,6 +16,11 @@
 #if defined(__has_include) && __has_include(<filesystem>)
 #include <filesystem>
 #define WRP_HAS_FILESYSTEM 1
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+#define WRP_HAS_FILESYSTEM 1
+namespace fs = std::experimental::filesystem;
 #else
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -794,7 +799,7 @@ int read_omni(std::string input_file) {
 	      Poco::Thread::sleep(100);
 	    }
 #else
-	    while (!std::filesystem::exists(path)) {
+	    while (!fs::exists(path)) {
 	      usleep(100000);
 	    }
 #endif
@@ -1153,13 +1158,13 @@ int set_blackhole(){
     }
   }  
 #elif WRP_HAS_FILESYSTEM
-  if (std::filesystem::exists(".blackhole")) {
+  if (fs::exists(".blackhole")) {
      std::cout << "yes" << std::endl;
   }
   else {
     std::cout << "no" << std::endl;
     std::cout << "launching a new IOWarp runtime...";
-    if (std::filesystem::create_directory(".blackhole")) {
+    if (fs::create_directory(".blackhole")) {
       std::cout << "done" << std::endl;
       return 0;
     } else {

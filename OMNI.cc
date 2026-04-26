@@ -43,8 +43,23 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
 #include <yaml-cpp/yaml.h>
+
+#if defined(__has_include) && __has_include(<filesystem>)
 #include <filesystem>
+#define WRP_HAS_FILESYSTEM 1
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+#define WRP_HAS_EXP_FILESYSTEM 1
+namespace fs = std::experimental::filesystem;
+#else
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
+#endif
+
 #include <future>
 #include <thread>
 #include <algorithm>
@@ -221,7 +236,7 @@ static std::string hmac_sha256_hex_impl(const std::string& key,
 #include <aws/s3/model/PutObjectRequest.h>
 #endif
 
-namespace fs = std::filesystem;
+
 
 namespace cae {
 
@@ -2611,7 +2626,7 @@ int OMNI::ReadOmni(const std::string& input_file) {
                 return -1;
               }
 #else
-              if (!std::filesystem::exists(path)) {
+              if (!fs::exists(path)) {
                 std::cerr << "Error: '" << path << "' does not exist" << std::endl;
                 return -1;
               }
@@ -2686,8 +2701,8 @@ int OMNI::ReadOmni(const std::string& input_file) {
                 break;
               }
 #else
-              if (std::filesystem::exists(path)) {
-                if (std::filesystem::file_size(path) >= expected_size) {
+              if (fs::exists(path)) {
+                if (fs::file_size(path) >= expected_size) {
                   file_ready = true;
                   break;
                 }
@@ -2737,8 +2752,8 @@ int OMNI::ReadOmni(const std::string& input_file) {
                 break;
               }
 #else
-              if (std::filesystem::exists(path)) {
-                auto file_size = std::filesystem::file_size(path);
+              if (fs::exists(path)) {
+                auto file_size = fs::file_size(path);
                 if (file_size >= offset + nbyte) {
                   file_ready = true;
                   break;
@@ -3225,7 +3240,7 @@ int OMNI::SetBlackhole() {
     }
   }
 #else
-  if (std::filesystem::exists(".blackhole") == true) {
+  if (fs::exists(".blackhole") == true) {
     if (!quiet_) {
       std::cout << "yes" << std::endl;
     }
@@ -3234,7 +3249,7 @@ int OMNI::SetBlackhole() {
       std::cout << "no" << std::endl;
       std::cout << "launching a new IOWarp runtime...";
     }
-    if (std::filesystem::create_directory(".blackhole")) {
+    if (fs::create_directory(".blackhole")) {
       if (!quiet_) {
         std::cout << "done" << std::endl;
       }

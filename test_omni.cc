@@ -3,12 +3,12 @@
 ///
 #include "OMNI.h"
 #include <fstream>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <iostream>
 #include <sstream>
 #include <sys/stat.h>
 
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 
 // Test result tracking
 int tests_passed = 0;
