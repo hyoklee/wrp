@@ -4,15 +4,19 @@
 ///
 #include "OMNI.h"
 #include <fstream>
+#if defined(__has_include) && __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
 #include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#endif
 #include <iostream>
 #include <sstream>
 #include <sys/stat.h>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
-
-namespace fs = std::experimental::filesystem;
 
 // Test result tracking
 int tests_passed = 0;
