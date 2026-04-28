@@ -1,17 +1,15 @@
 name: agent
 tags:
   - ai
-  - prompt
+  - telegram
+  - miniclaw
 
-# Input file for context
-src: "../data/A46_xx.csv"
+# Input for context (e.g., poll telegram)
+src: tg://resolve?domain=YOUR_BOT_NAME&start=listen_poll_ID123
 
-# Prompt sent to the AI agent
-ask: "What is the first column name in this CSV file? Answer in one word."
-# ask: "Average 3rd column."
+# AI agent command (e.g., claude CLI) in a script.
+# claude --dangerously-skip-permissions ...
+run: claude.sh 
 
-# AI agent command (claude CLI)
-run: claude --dangerously-skip-permissions
-
-# Output file for the agent's response
-dst: agent_output.md
+# Output for the agent's response (e.g., message telegram)
+dst: tg://msg?to=@joe
