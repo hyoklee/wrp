@@ -4,7 +4,7 @@
 HOSTS := jam nene guanaco alpaca giraffe
 
 # Define the command to execute on remote hosts
-COMMAND ?= "wrt"
+COMMAND ?= "wrp"
 
 # Default target: depends on all host-specific targets
 all: $(HOSTS)
