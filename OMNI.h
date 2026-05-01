@@ -98,6 +98,7 @@ class OMNI {
               const std::string& path, unsigned char* buffer, size_t nbyte);
 #if defined(USE_AWS) || defined(USE_POCO)
   int WriteS3(const std::string& dest, char* ptr);
+  int ReadS3(const std::string& src, const std::string& local_file);
 #endif
 
   // Download/transfer functions

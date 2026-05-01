@@ -2361,6 +2361,277 @@ int OMNI::WriteS3(const std::string& dest, char* ptr) {
 }
 #endif
 
+#ifdef USE_AWS
+int OMNI::ReadS3(const std::string& src, const std::string& local_file) {
+  const Aws::String prefix = "s3://";
+  if (src.find(prefix) != 0) {
+    std::cerr << "Error: not a valid S3 URL (missing 's3://' prefix)" << std::endl;
+    return -1;
+  }
+  Aws::String path = src.substr(prefix.length());
+  size_t first_slash = path.find('/');
+  if (first_slash == Aws::String::npos) {
+    std::cerr << "Error: invalid S3 URI (no path separator found)" << std::endl;
+    return -1;
+  }
+  Aws::String bucket_name = path.substr(0, first_slash);
+  Aws::String object_key = path.substr(first_slash + 1);
+  if (bucket_name.empty() || object_key.empty()) {
+    std::cerr << "Error: bucket name or object key is empty" << std::endl;
+    return -1;
+  }
+
+  AWSConfig aws_config = ReadAWSConfig();
+  auto [access_key, secret_key] = ReadAWSCredentials();
+  if (access_key.empty() || secret_key.empty()) {
+    std::cerr << "Error: AWS credentials not found in ~/.aws/credentials" << std::endl;
+    return -1;
+  }
+
+  Aws::S3::S3ClientConfiguration client_config;
+  std::string endpoint = "localhost:4566";
+  Aws::Http::Scheme scheme = Aws::Http::Scheme::HTTP;
+  std::string region = "us-east-1";
+
+  if (!aws_config.endpoint_url.empty()) {
+    std::string url = aws_config.endpoint_url;
+    if (url.find("https://") == 0) {
+      scheme = Aws::Http::Scheme::HTTPS;
+      url = url.substr(8);
+    } else if (url.find("http://") == 0) {
+      scheme = Aws::Http::Scheme::HTTP;
+      url = url.substr(7);
+    }
+    if (!url.empty() && url.back() == '/') url.pop_back();
+    endpoint = url;
+  }
+  if (!aws_config.region.empty()) region = aws_config.region;
+
+  client_config.endpointOverride = endpoint.c_str();
+  client_config.scheme = scheme;
+  client_config.region = region.c_str();
+  client_config.verifySSL = true;
+  client_config.useDualStack = false;
+  client_config.disableS3ExpressAuth = true;
+  client_config.useVirtualAddressing = false;
+  client_config.enableEndpointDiscovery = false;
+  client_config.disableExpectHeader = true;
+
+  if (!quiet_) {
+    std::cout << "S3 GET Configuration:" << std::endl;
+    std::cout << "  Endpoint: " << endpoint << std::endl;
+    std::cout << "  Region: " << region << std::endl;
+    std::cout << "  Bucket: " << bucket_name << std::endl;
+    std::cout << "  Key: " << object_key << std::endl;
+  }
+
+  Aws::Auth::AWSCredentials credentials(access_key.c_str(), secret_key.c_str());
+  Aws::S3::S3Client s3_client(credentials, nullptr, client_config);
+
+  Aws::S3::Model::GetObjectRequest get_request;
+  get_request.SetBucket(bucket_name);
+  get_request.SetKey(object_key);
+
+  auto get_outcome = s3_client.GetObject(get_request);
+  if (get_outcome.IsSuccess()) {
+    auto& body = get_outcome.GetResult().GetBody();
+    std::ofstream out_file(local_file, std::ios::binary);
+    if (!out_file.is_open()) {
+      std::cerr << "Error: unable to open output file: " << local_file << std::endl;
+      return -1;
+    }
+    out_file << body.rdbuf();
+    out_file.close();
+    if (!quiet_) {
+      std::cout << "Successfully downloaded s3://" << bucket_name << "/" << object_key
+                << " to " << local_file << std::endl;
+    }
+    return 0;
+  } else {
+    auto error = get_outcome.GetError();
+    std::cerr << "Error: S3 GET failed - " << error.GetMessage() << std::endl;
+    return -1;
+  }
+}
+#elif defined(USE_POCO)
+// POCO-based S3 download with manual AWS SigV4 signing
+int OMNI::ReadS3(const std::string& src, const std::string& local_file) {
+  const std::string prefix = "s3://";
+  if (src.find(prefix) != 0) {
+    std::cerr << "Error: not a valid S3 URL (missing 's3://' prefix)" << std::endl;
+    return -1;
+  }
+
+  std::string path = src.substr(prefix.length());
+  size_t first_slash = path.find('/');
+  if (first_slash == std::string::npos) {
+    std::cerr << "Error: invalid S3 URI (no path separator found)" << std::endl;
+    return -1;
+  }
+
+  std::string bucket_name = path.substr(0, first_slash);
+  std::string object_key = path.substr(first_slash + 1);
+
+  if (bucket_name.empty() || object_key.empty()) {
+    std::cerr << "Error: bucket name or object key is empty" << std::endl;
+    return -1;
+  }
+
+  AWSConfig aws_config = ReadAWSConfig();
+  auto [access_key, secret_key] = ReadAWSCredentials();
+
+  if (access_key.empty() || secret_key.empty()) {
+    std::cerr << "Error: AWS credentials not found in ~/.aws/credentials" << std::endl;
+    return -1;
+  }
+
+  // Parse endpoint URL
+  std::string endpoint = "localhost:4566";
+  std::string scheme = "http";
+  std::string region = aws_config.region.empty() ? "us-east-1" : aws_config.region;
+  int port = 80;
+
+  if (!aws_config.endpoint_url.empty()) {
+    std::string url = aws_config.endpoint_url;
+    if (url.find("https://") == 0) {
+      scheme = "https";
+      url = url.substr(8);
+      port = 443;
+    } else if (url.find("http://") == 0) {
+      scheme = "http";
+      url = url.substr(7);
+      port = 80;
+    }
+    if (!url.empty() && url.back() == '/') url.pop_back();
+    size_t port_pos = url.find(':');
+    if (port_pos != std::string::npos) {
+      endpoint = url.substr(0, port_pos);
+      port = std::stoi(url.substr(port_pos + 1));
+    } else {
+      endpoint = url;
+    }
+  }
+
+  // Empty payload hash for GET requests
+  std::string payload_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
+  auto now = std::chrono::system_clock::now();
+  auto time_t_now = std::chrono::system_clock::to_time_t(now);
+  std::tm tm_now;
+#ifdef _WIN32
+  gmtime_s(&tm_now, &time_t_now);
+#else
+  gmtime_r(&time_t_now, &tm_now);
+#endif
+
+  char date_stamp[9];
+  char amz_date[17];
+  std::strftime(date_stamp, sizeof(date_stamp), "%Y%m%d", &tm_now);
+  std::strftime(amz_date, sizeof(amz_date), "%Y%m%dT%H%M%SZ", &tm_now);
+
+  std::string canonical_uri = "/" + bucket_name + "/" + object_key;
+  std::string host = endpoint;
+
+  std::ostringstream canonical_headers;
+  canonical_headers << "host:" << host << "\n"
+                    << "x-amz-content-sha256:" << payload_hash << "\n"
+                    << "x-amz-date:" << amz_date << "\n";
+  std::string signed_headers = "host;x-amz-content-sha256;x-amz-date";
+
+  std::ostringstream canonical_request;
+  canonical_request << "GET\n"
+                    << canonical_uri << "\n"
+                    << "\n"  // empty query string
+                    << canonical_headers.str() << "\n"
+                    << signed_headers << "\n"
+                    << payload_hash;
+
+  std::string canonical_request_hash = sha256_hex_impl(canonical_request.str());
+
+  std::string algorithm = "AWS4-HMAC-SHA256";
+  std::string credential_scope = std::string(date_stamp) + "/" + region + "/s3/aws4_request";
+  std::ostringstream string_to_sign;
+  string_to_sign << algorithm << "\n"
+                 << amz_date << "\n"
+                 << credential_scope << "\n"
+                 << canonical_request_hash;
+
+  std::string date_key_str = "AWS4" + secret_key;
+  auto date_key = hmac_sha256_raw_impl(date_key_str, date_stamp);
+  auto region_key = hmac_sha256_raw_impl(std::string(date_key.begin(), date_key.end()), region);
+  auto service_key = hmac_sha256_raw_impl(std::string(region_key.begin(), region_key.end()), "s3");
+  auto signing_key = hmac_sha256_raw_impl(std::string(service_key.begin(), service_key.end()), "aws4_request");
+  std::string signature = hmac_sha256_hex_impl(
+      std::string(signing_key.begin(), signing_key.end()), string_to_sign.str());
+
+  std::ostringstream authorization;
+  authorization << algorithm << " Credential=" << access_key << "/" << credential_scope
+                << ", SignedHeaders=" << signed_headers
+                << ", Signature=" << signature;
+
+  if (!quiet_) {
+    std::cout << "S3 GET Configuration:" << std::endl;
+    std::cout << "  Endpoint: " << endpoint << std::endl;
+    std::cout << "  Region: " << region << std::endl;
+    std::cout << "  Scheme: " << scheme << std::endl;
+    std::cout << "  Bucket: " << bucket_name << std::endl;
+    std::cout << "  Key: " << object_key << std::endl;
+    std::cout << "Using AWS credentials from ~/.aws/credentials" << std::endl;
+    std::cout << "  Access Key ID: " << access_key.substr(0, 8) << "..." << std::endl;
+  }
+
+  try {
+    std::unique_ptr<Poco::Net::HTTPClientSession> session;
+    if (scheme == "https") {
+      Poco::Net::Context::Ptr context = new Poco::Net::Context(
+          Poco::Net::Context::CLIENT_USE, "", "", "",
+          Poco::Net::Context::VERIFY_NONE, 9, true);
+      session = std::make_unique<Poco::Net::HTTPSClientSession>(endpoint, port, context);
+    } else {
+      session = std::make_unique<Poco::Net::HTTPClientSession>(endpoint, port);
+    }
+
+    Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, canonical_uri);
+    request.set("Host", host);
+    request.set("x-amz-date", amz_date);
+    request.set("x-amz-content-sha256", payload_hash);
+    request.set("Authorization", authorization.str());
+
+    session->sendRequest(request);
+
+    Poco::Net::HTTPResponse response;
+    std::istream& rs = session->receiveResponse(response);
+
+    if (response.getStatus() == Poco::Net::HTTPResponse::HTTP_OK) {
+      std::ofstream out_file(local_file, std::ios::binary);
+      if (!out_file.is_open()) {
+        std::cerr << "Error: unable to open output file: " << local_file << std::endl;
+        return -1;
+      }
+      Poco::StreamCopier::copyStream(rs, out_file);
+      out_file.close();
+      if (!quiet_) {
+        std::cout << "Successfully downloaded s3://" << bucket_name << "/" << object_key
+                  << " to " << local_file << std::endl;
+      }
+      return 0;
+    } else {
+      std::string response_body;
+      Poco::StreamCopier::copyToString(rs, response_body);
+      std::cerr << "Error: S3 GET failed with status " << response.getStatus()
+                << " " << response.getReason() << std::endl;
+      if (!response_body.empty()) {
+        std::cerr << "Response: " << response_body << std::endl;
+      }
+      return -1;
+    }
+  } catch (Poco::Exception& ex) {
+    std::cerr << "Error: " << ex.displayText() << std::endl;
+    return -1;
+  }
+}
+#endif
+
 #ifdef USE_POCO
 int OMNI::Download(const std::string& url, const std::string& output_file_name,
                    long long start_byte, long long end_byte) {
@@ -2611,7 +2882,8 @@ int OMNI::ReadOmni(const std::string& input_file) {
           }
 #endif
           if (path.find("https://") == path.npos &&
-              path.find("hdf5://") == path.npos
+              path.find("hdf5://") == path.npos &&
+              path.find("s3://") == path.npos
 #ifdef USE_GLOBUS
               && path.find("globus://") == path.npos
 #endif
@@ -2957,6 +3229,13 @@ int OMNI::ReadOmni(const std::string& input_file) {
     if (Download(path, name, start, end) != 0)
       std::cerr << "Error: downloading '" << path << "' failed " << std::endl;
   }
+
+#if defined(USE_AWS) || defined(USE_POCO)
+  if (!path.empty() && path.find("s3://") == 0) {
+    if (ReadS3(path, name) != 0)
+      std::cerr << "Error: downloading from S3 '" << path << "' failed" << std::endl;
+  }
+#endif
 
   if (!hash.empty()) {
     std::string h;
