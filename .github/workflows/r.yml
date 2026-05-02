@@ -24,8 +24,14 @@ jobs:
             host: ubuntu-latest
             site: obsd-7.8.arm64
     steps:
-      - name: checkout
+      - name: checkout wrp
         uses: actions/checkout@v6
+
+      - name: checkout omni
+        uses: actions/checkout@v6
+        with:
+          repository: hyoklee/omni
+          path: omni
 
       - name: ${{ matrix.os.name }}
         uses: cross-platform-actions/action@master
@@ -36,14 +42,15 @@ jobs:
           shell: bash
           run: |
             sudo pkg_add cmake poco yaml-cpp
+            mkdir omni/build
+            cd omni/build
+            cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/omni/install
+            make && make install
+            cd ../..
             mkdir build
             cd build
-            cmake -DSITE="${{ matrix.os.site }}" -DBUILDNAME="omni/r" ..
-            ctest -C Release -D Experimental
-            cd ..
-            mkdir poco
-            cd poco
-            cmake -DPOCO=ON -DSITE="${{ matrix.os.site }}" -DBUILDNAME="omni/r/poco" ..
+            cmake -Domni_DIR=$HOME/omni/install/lib/cmake/omni \
+                  -DSITE="${{ matrix.os.site }}" -DBUILDNAME="omni/r" ..
             ctest -C Release -D Experimental
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

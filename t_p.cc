@@ -145,7 +145,6 @@ bool test_Put_with_valid_hash() {
   // Create a source file with known content
   create_test_file("test_hash.txt", "test");
 
-#ifdef USE_POCO
   // Calculate actual hash first
   std::string actual_hash = omni.Sha256File("test_hash.txt");
 
@@ -164,10 +163,6 @@ bool test_Put_with_valid_hash() {
   remove_test_file("testhash");
 
   return result == 0;
-#else
-  remove_test_file("test_hash.txt");
-  return true;  // Skip test if POCO not available
-#endif
 }
 
 //
@@ -316,7 +311,6 @@ bool test_Get_complete_workflow() {
 
   create_test_dir(".blackhole");
 
-#ifdef USE_POCO
   // Create test buffer and metadata
   create_test_file("testcomplete", "test data content");
   create_test_file(".blackhole/ls", "testcomplete|workflow,test\n");
@@ -330,21 +324,18 @@ bool test_Get_complete_workflow() {
   bool has_correct_content = false;
   if (yaml_exists) {
     std::ifstream ifs("testcomplete.omni.yaml");
-    std::string content((std::istreambuf_iterator<char>(ifs)),
+    std::string content_str((std::istreambuf_iterator<char>(ifs)),
                         std::istreambuf_iterator<char>());
     ifs.close();
 
-    has_correct_content = content.find("name: testcomplete") != std::string::npos &&
-                         content.find("tags: workflow,test") != std::string::npos;
+    has_correct_content = content_str.find("name: testcomplete") != std::string::npos &&
+                         content_str.find("tags: workflow,test") != std::string::npos;
   }
 
   remove_test_file("testcomplete.omni.yaml");
   remove_test_file("testcomplete");
 
   return result == 0 && yaml_exists && has_correct_content;
-#else
-  return true;  // Skip if POCO not available
-#endif
 }
 
 //

@@ -115,18 +115,14 @@ bool test_Get_with_valid_buffer() {
   create_test_dir(".blackhole");
   create_test_file(".blackhole/ls", "testbuffer|tag1,tag2,tag3\n");
 
-#ifdef USE_POCO
   // Create a test buffer file
   create_test_file("testbuffer", "test content");
-#endif
 
   int result = omni.Get("testbuffer");
 
   // Clean up
   remove_test_file("testbuffer.omni.yaml");
-#ifdef USE_POCO
   remove_test_file("testbuffer");
-#endif
 
   return result == 0;
 }
@@ -142,17 +138,13 @@ bool test_Get_buffer_not_found() {
   create_test_file(".blackhole/ls", "otherbuffer|tag1\n");  // Different buffer
 
   // Create a dummy file to avoid Sha256File exception
-#ifdef USE_POCO
   create_test_file("nonexistent", "dummy");
-#endif
 
   int result = omni.Get("nonexistent");
 
   // Clean up
   remove_test_file("nonexistent.omni.yaml");
-#ifdef USE_POCO
   remove_test_file("nonexistent");
-#endif
 
   return result == -1;
 }
