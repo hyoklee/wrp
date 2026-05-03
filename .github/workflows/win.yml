@@ -1,0 +1,60 @@
+name: win
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-11-arm
+            triplet: arm64-windows
+          - os: windows-2025
+            triplet: x64-windows
+          - os: windows-2022
+            triplet: x64-windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout omni
+        uses: actions/checkout@v4
+        with:
+          repository: hyoklee/omni
+          path: omni
+
+      - name: Install dependencies via vcpkg
+        run: vcpkg install poco[crypto,netssl] yaml-cpp --triplet ${{ matrix.triplet }}
+
+      - name: Build and install omni
+        run: |
+          cmake -B omni/build omni `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET="${{ matrix.triplet }}" `
+            -DCMAKE_INSTALL_PREFIX="$env:USERPROFILE/omni-install"
+          cmake --build omni/build --config Release
+          cmake --install omni/build --config Release
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET="${{ matrix.triplet }}"
+          -Domni_DIR="$env:USERPROFILE/omni-install/lib/cmake/omni"
+          -DSITE="${{ matrix.os }}"
+          -DBUILDNAME="wrp"
+
+      - name: Test
+        run: ctest --test-dir build -C Release -D Experimental
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
