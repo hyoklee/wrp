@@ -50,7 +50,7 @@ jobs:
             mkdir build
             cd build
             cmake -Domni_DIR=$HOME/omni/install/lib/cmake/omni \
-                  -DSITE="${{ matrix.os.site }}" -DBUILDNAME="omni/r" ..
+                  -DSITE="${{ matrix.os.name }}-${{ matrix.os.version }}.${{ matrix.os.architecture}}" -DBUILDNAME="wrp" ..
             ctest -C Release -D Experimental
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
