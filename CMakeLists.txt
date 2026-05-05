@@ -38,6 +38,12 @@ if(COV)
   endif()
 endif()
 
+set(SANITIZER "" CACHE STRING "Sanitizer type: address, memory, or undefined")
+if(SANITIZER)
+  add_compile_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=${SANITIZER})
+endif()
+
 add_test(NAME put COMMAND wrp put ../test/posix.yml)
 
 add_test(NAME get COMMAND wrp get cae)
