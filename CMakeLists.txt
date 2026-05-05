@@ -143,6 +143,12 @@ add_test(NAME redi COMMAND wrp put ../test/redi.yml)
 add_test(NAME rget COMMAND wrp put ../test/rget.yml)
 add_test(NAME globus COMMAND wrp put ../test/globus.yml)
 add_test(NAME wait_file COMMAND wrp put ../test/wait_file.yml)
+add_test(NAME hf_r COMMAND wrp put ../test/hf_w.yml)
+set_tests_properties(hf_r
+    PROPERTIES
+    WILL_FAIL "TRUE"
+)
+add_test(NAME hf_w COMMAND wrp put ../test/hf_r.yml)
 
 add_executable(t_o t_o.cc)
 target_link_libraries(t_o omni::omni)

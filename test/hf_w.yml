@@ -1,0 +1,10 @@
+name: hf_w
+
+tags:
+  - huggingface
+  - csv
+  - write
+
+src: "../data/A46_xx.csv"
+
+dst: "hf://datasets/hyoklee/wrp/A46_xx.csv"
