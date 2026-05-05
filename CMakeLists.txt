@@ -33,16 +33,15 @@ if(SANITIZER)
   add_compile_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
   add_link_options(-fsanitize=${SANITIZER})
 endif()
+if(COV)
+  if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(--coverage)
+    add_link_options(--coverage)
+  endif()
+endif()
 
 add_executable(wrp wrp.cc)
 target_link_libraries(wrp omni::omni)
-
-if(COV)
-  if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(wrp PRIVATE -coverage)
-    target_link_options(wrp PRIVATE -coverage)
-  endif()
-endif()
 
 add_test(NAME put COMMAND wrp put ../test/posix.yml)
 

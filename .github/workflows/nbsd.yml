@@ -39,16 +39,19 @@ jobs:
           version: '${{ matrix.os.version }}'
           shell: bash
           run: |
+            set -e
             sudo pkgin -y install cmake poco yaml-cpp
             export LD_LIBRARY_PATH=/usr/pkg/lib
             mkdir omni/build
             cd omni/build
-            cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/omni/install
+            cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/omni/install \
+                     -DCMAKE_PREFIX_PATH=/usr/pkg
             make && make install
             cd ../..
             mkdir build
             cd build
             cmake -Domni_DIR=$HOME/omni/install/lib/cmake/omni \
+                  -DCMAKE_PREFIX_PATH=/usr/pkg \
                   -DSITE="${{ matrix.os.name }}-${{ matrix.os.version }}.${{ matrix.os.architecture }}" -DBUILDNAME="wrp" ..
             ctest -C Release -D Experimental
 concurrency:
