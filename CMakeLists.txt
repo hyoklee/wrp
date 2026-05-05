@@ -27,21 +27,21 @@ set(CMAKE_CXX_STANDARD 17)
 #   cmake .. -Domni_DIR=~/omni/install/lib/cmake/omni
 find_package(omni CONFIG REQUIRED)
 
+option(COV "Enable COVERAGE support" OFF)
+set(SANITIZER "" CACHE STRING "Sanitizer type: address, memory, or undefined")
+if(SANITIZER)
+  add_compile_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=${SANITIZER})
+endif()
+
 add_executable(wrp wrp.cc)
 target_link_libraries(wrp omni::omni)
 
-option(COV "Enable COVERAGE support" OFF)
 if(COV)
   if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(wrp PRIVATE -coverage)
     target_link_options(wrp PRIVATE -coverage)
   endif()
-endif()
-
-set(SANITIZER "" CACHE STRING "Sanitizer type: address, memory, or undefined")
-if(SANITIZER)
-  add_compile_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
-  add_link_options(-fsanitize=${SANITIZER})
 endif()
 
 add_test(NAME put COMMAND wrp put ../test/posix.yml)
