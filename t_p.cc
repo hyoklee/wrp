@@ -699,6 +699,16 @@ bool test_ReadConfigFile_with_content() {
 }
 
 //
+// Test: exercise create_test_dir on new path and remove_test_dir
+//
+bool test_dir_helpers() {
+  std::string test_dir = ".test_helper_dir";
+  create_test_dir(test_dir);
+  remove_test_dir(test_dir);
+  return !fs::exists(test_dir);
+}
+
+//
 // Test 20: CheckDataHubConfig when not configured
 //
 bool test_CheckDataHubConfig_not_configured() {
@@ -745,6 +755,7 @@ int main() {
   std::cout << "========================================" << std::endl << std::endl;
 
   // Run all tests
+  TEST(dir_helpers);
   TEST(Put_with_local_file);
   TEST(Put_src_not_found);
   TEST(Put_with_valid_hash);
@@ -757,7 +768,20 @@ int main() {
   TEST(ReadExactBytesFromOffset_success);
   TEST(ReadExactBytesFromOffset_not_found);
   TEST(ReadExactBytesFromOffset_eof);
+
+  // Pre-create ~/.wrp/config so backup/restore branches execute in proxy test
+  std::string home_s = get_home_dir();
+  std::string wrp_cfg = home_s + "/.wrp/config";
+  bool wrp_cfg_created = false;
+  if (!fs::exists(wrp_cfg)) {
+    create_test_dir(home_s + "/.wrp");
+    create_test_file(wrp_cfg, "# test setup\n");
+    wrp_cfg_created = true;
+  }
   TEST(ReadProxyConfig_with_whitespace);
+  if (wrp_cfg_created)
+    remove_test_file(wrp_cfg);
+
   TEST(ReadAWSConfig_empty_values);
   TEST(ReadAWSConfig_semicolon_comments);
   TEST(Put_scalar_root);

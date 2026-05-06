@@ -452,6 +452,16 @@ bool test_ReadAWSConfig_with_comments() {
 
 
 //
+// Test: exercise create_test_dir on new path and remove_test_dir
+//
+bool test_dir_helpers() {
+  std::string test_dir = ".test_helper_dir";
+  create_test_dir(test_dir);
+  remove_test_dir(test_dir);
+  return !fs::exists(test_dir);
+}
+
+//
 // Test 25: Test Put() - file not found
 //
 bool test_Put_file_not_found() {
@@ -513,15 +523,29 @@ int main() {
   std::cout << "========================================" << std::endl << std::endl;
 
   // Run all tests
+  TEST(dir_helpers);
   TEST(List_file_not_found);
   TEST(List_success);
   TEST(Get_with_valid_buffer);
   TEST(Get_buffer_not_found);
   TEST(ReadConfigFile_not_found);
   TEST(ReadConfigFile_exists);
+
+  // Pre-create ~/.wrp/config so backup/restore branches execute in proxy tests
+  std::string home_s = get_home_dir();
+  std::string wrp_cfg = home_s + "/.wrp/config";
+  bool wrp_cfg_created = false;
+  if (!fs::exists(wrp_cfg)) {
+    create_test_dir(home_s + "/.wrp");
+    create_test_file(wrp_cfg, "# test setup\n");
+    wrp_cfg_created = true;
+  }
   TEST(ReadProxyConfig_no_file);
   TEST(ReadProxyConfig_with_file);
   TEST(ReadProxyConfig_invalid_port);
+  if (wrp_cfg_created)
+    remove_test_file(wrp_cfg);
+
   TEST(ReadAWSConfig_no_file);
   TEST(ReadAWSConfig_with_file);
   TEST(ReadAWSConfig_with_comments);

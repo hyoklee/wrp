@@ -1,0 +1,49 @@
+name: cov
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout omni
+        uses: actions/checkout@v4
+        with:
+          repository: hyoklee/omni
+          path: omni
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y cmake lcov libpoco-dev libyaml-cpp-dev
+
+      - name: Build and install omni
+        run: |
+          cmake -B omni/build omni -DCMAKE_INSTALL_PREFIX=$HOME/omni-install
+          cmake --build omni/build
+          cmake --install omni/build
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -Domni_DIR=$HOME/omni-install/lib/cmake/omni \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCOV=ON \
+            -DSITE="ubuntu-24.04" \
+            -DBUILDNAME="wrp-coverage"
+
+      - name: Test
+        run: ctest --test-dir build -D Experimental
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
