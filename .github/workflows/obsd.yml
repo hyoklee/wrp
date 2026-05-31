@@ -15,14 +15,14 @@ jobs:
         os:
           - name: openbsd
             architecture: x86_64
-            version: '7.8'
+            version: '7.9'
             host: ubuntu-latest
-            site: obsd-7.8
+            site: obsd-7.9
           - name: openbsd
             architecture: arm64
-            version: '7.8'
+            version: '7.9'
             host: ubuntu-latest
-            site: obsd-7.8.arm64
+            site: obsd-7.9.arm64
     steps:
       - name: checkout wrp
         uses: actions/checkout@v6
