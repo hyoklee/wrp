@@ -62,14 +62,7 @@ jobs:
         env:
           ASAN_OPTIONS: abort_on_error=1:detect_leaks=1
           LSAN_OPTIONS: exitcode=1:print_suppressions=0
-          # libstdc++ on the runner is not MSan-instrumented, so every call
-          # into it (ifstream::open/fopen, std::endl->ctype memcmp) raises a
-          # use-of-uninitialized-value false positive that otherwise _exit()s
-          # the program before it reaches its real exit path. Suppress reports
-          # whose interceptor stack passes through libstdc++ so each program
-          # runs to completion and returns its genuine exit code (matching the
-          # non-sanitizer build). See .msan-suppressions.txt.
-          MSAN_OPTIONS: abort_on_error=0:exitcode=0:suppressions=${{ github.workspace }}/.msan-suppressions.txt
+          MSAN_OPTIONS: abort_on_error=0:exitcode=0
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: ctest --test-dir build -C Release -D Experimental
 
