@@ -159,4 +159,16 @@ target_link_libraries(t_p omni::omni)
 add_test(NAME omni_extended_unit COMMAND $<TARGET_FILE:t_p>)
 set_tests_properties(omni_extended_unit PROPERTIES PASS_REGULAR_EXPRESSION "All tests passed!")
 
+# t_o/t_p are test drivers, not the code under test (they exercise the
+# instrumented omni library). Under MemorySanitizer their std::filesystem path
+# helpers raise a non-interceptor use-of-uninitialized-value false positive
+# (path::_List::~_List reads an _Impl allocated by the uninstrumented libstdc++
+# filesystem code). That report cannot be silenced via MSAN_OPTIONS
+# suppressions, so drop memory instrumentation for the driver translation units
+# only -- the omni library they call into stays fully instrumented.
+if(SANITIZER STREQUAL "memory")
+  target_compile_options(t_o PRIVATE -fno-sanitize=memory)
+  target_compile_options(t_p PRIVATE -fno-sanitize=memory)
+endif()
+
 install(TARGETS wrp DESTINATION bin)
